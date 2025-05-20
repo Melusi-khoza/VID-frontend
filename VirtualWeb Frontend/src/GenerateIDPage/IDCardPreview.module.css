@@ -1,0 +1,22 @@
+.previewContainer {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    padding: 10px;
+  }
+  
+  .idImage {
+    width: 100%;
+    max-width: 500px; /* Adjust the max-width of the image */
+    height: auto;
+    border-radius: 8px; /* Slight rounding for a polished look */
+    border: 1px solid #ddd; /* Optional: Add a light border around the image */
+  }
+  
+  .idImageContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+  }
+  

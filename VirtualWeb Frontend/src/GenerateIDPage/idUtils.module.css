@@ -1,0 +1,85 @@
+/* Container that holds everything on the page */
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh; /* Full viewport height */
+    padding: 20px;
+    background-color: #f4f4f4; /* Light background color */
+  }
+  
+  /* Title for the page */
+  .title {
+    font-size: 28px;
+    color: #333;
+    margin-bottom: 20px;
+    font-weight: bold;
+  }
+  
+  /* Loader style when the ID is being generated */
+  .loader {
+    font-size: 20px;
+    color: #ff6347; /* Tomato color for emphasis */
+    margin-top: 20px;
+  }
+  
+  /* Button for downloading the generated ID */
+  .downloadButton,
+  .generateButton {
+    padding: 12px 24px;
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 8px; /* Rounded corners for buttons */
+    border: none;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    margin-top: 20px;
+  }
+  
+  /* Disabled state for both buttons */
+  .downloadButton:disabled,
+  .generateButton:disabled {
+    background-color: #ccc; /* Gray background for disabled */
+    cursor: not-allowed;
+    transform: scale(1); /* No scaling when disabled */
+  }
+  
+  /* Hover effects for the buttons */
+  .generateButton:hover,
+  .downloadButton:hover:not(:disabled) {
+    background-color: #45a049; /* Darker green on hover */
+    transform: scale(1.05); /* Slightly enlarge button */
+  }
+  
+  /* Specific styles for the "Generate ID" button */
+  .generateButton {
+    background-color: #4caf50; /* Green background for the generate button */
+    color: white;
+  }
+  
+  /* Specific styles for the "Download ID" button */
+  .downloadButton {
+    background-color: #007bff; /* Blue background for the download button */
+    color: white;
+  }
+  
+  /* Container for the generated ID preview image */
+  .idPreviewContainer {
+    display: flex;
+    justify-content: center;
+    margin-top: 30px;
+  }
+  
+  .idPreviewImage {
+    width: 200px; /* Set width of the preview image */
+    height: auto;
+    border-radius: 8px; /* Rounded corners for image */
+    border: 1px solid #ddd; /* Optional: Light border around the image */
+  }
+  
+  .idPreviewMessage {
+    font-size: 16px;
+    color: #333;
+    margin-top: 10px;
+  }
+  

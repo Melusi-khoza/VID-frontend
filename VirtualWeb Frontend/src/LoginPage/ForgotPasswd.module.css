@@ -1,0 +1,135 @@
+.forgotPasswordContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f5f8fa;
+    padding: 20px;
+}
+  
+.forgotPasswordCard {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    padding: 40px;
+    width: 100%;
+    max-width: 450px;
+    transition: all 0.3s ease;
+}
+  
+.forgotPasswordCard h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #333;
+    font-size: 24px;
+    text-align: center;
+}
+  
+.instructionText {
+    color: #666;
+    margin-bottom: 25px;
+    text-align: center;
+    font-size: 15px;
+    line-height: 1.5;
+}
+  
+.formGroup {
+    margin-bottom: 20px;
+}
+  
+.formGroup label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #555;
+}
+  
+.input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+  
+.input:focus {
+    border-color: #4a90e2;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+  
+.submitButton {
+    width: 100%;
+    padding: 14px;
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 10px;
+}
+  
+.submitButton:hover {
+    background-color: #3a7bc8;
+}
+  
+.submitButton:disabled {
+    background-color: #a0c3eb;
+    cursor: not-allowed;
+}
+  
+.errorMessage {
+    background-color: #fff0f0;
+    color: #e53935;
+    padding: 12px 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    border-left: 4px solid #e53935;
+}
+  
+.successMessage {
+    background-color: #f0f9eb;
+    color: #67c23a;
+    padding: 12px 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    border-left: 4px solid #67c23a;
+}
+  
+.additionalLinks {
+    margin-top: 25px;
+    text-align: center;
+    color: #666;
+    font-size: 14px;
+}
+  
+.additionalLinks a {
+    color: #4a90e2;
+    text-decoration: none;
+    font-weight: 500;
+}
+  
+.additionalLinks a:hover {
+    text-decoration: underline;
+}
+  
+@media (max-width: 480px) {
+    .forgotPasswordCard {
+      padding: 25px;
+    }
+    
+    .forgotPasswordCard h2 {
+      font-size: 22px;
+    }
+    
+    .input,
+    .submitButton {
+      padding: 12px;
+    }
+}

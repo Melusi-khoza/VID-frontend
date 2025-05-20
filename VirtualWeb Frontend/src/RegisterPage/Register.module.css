@@ -1,0 +1,186 @@
+/* General reset and box-sizing rule */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  /* Background and layout for the register container */
+  .registerContainer {
+    height: 100vh;
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    overflow: hidden; /* Prevent overflow of content */
+  }
+  
+  /* Main form container with a shadow and rounded corners */
+  .formFrame {
+    background: #ffffff;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 500px;
+    overflow-y: auto; /* Enable vertical scrolling inside the form */
+    max-height: 90vh; /* Allow the form to scroll if its height exceeds the container */
+  }
+  
+  /* Heading styling */
+  h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #333;
+  }
+  
+  h2 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #2196f3;
+    margin-bottom: 20px;
+  }
+  
+  p {
+    color: #555;
+    font-size: 16px;
+    margin-bottom: 30px;
+  }
+  
+  /* Form input groups with consistent margin */
+  .inputGroup {
+    margin-bottom: 20px;
+  }
+  
+  .inputGroup label {
+    display: block;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+  }
+  
+  /* Style for text and password inputs */
+  .inputGroup input,
+  .inputGroup select {
+    width: 100%;
+    padding: 12px 15px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    outline: none;
+    transition: border-color 0.3s ease;
+  }
+  
+  /* Input focus styles */
+  .inputGroup input:focus,
+  .inputGroup select:focus {
+    border-color: #2196f3;
+  }
+  
+  /* Password error styling */
+  .errorText {
+    color: #e74c3c;
+    font-size: 14px;
+    margin-top: 5px;
+  }
+  
+  /* List of password validation errors */
+  .errorText ul {
+    list-style-type: none;
+  }
+  
+  .errorText li {
+    margin-bottom: 5px;
+  }
+  
+  /* Register Button */
+  .registerButton {
+    width: 100%;
+    margin-top: 20px;
+    padding-top: 10px;
+    padding: 12px 20px;
+    font-size: 18px;
+    font-weight: bold;
+    background-color: #2196f3;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .registerButton:hover {
+    background-color: #1976d2;
+    transform: translateY(-2px);
+  }
+  
+  /* Back to Login Button */
+  .backToLoginButton {
+    padding-top: 10px;
+    width: 100%;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    background-color: #f4f7fc;
+    color: #2196f3;
+    border: 2px solid #2196f3;
+    border-radius: 50px;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+  }
+  
+  .backToLoginButton:hover {
+    background-color: #2196f3;
+    color: white;
+    transform: translateY(-2px);
+  }
+
+  .back-login {
+    font-size: 14px;
+    color: #003366;
+    /* Blue text */
+    display: inline-block;
+    margin-top: 15px;
+    text-decoration: none;
+    padding-left: 168px;
+    font-weight: 600;
+}
+
+  .back-login:hover {
+      text-decoration: underline;
+      color: #002147;
+      /* Darker blue on hover */
+  }
+  
+  /* Responsive styles */
+  @media (max-width: 768px) {
+    .formFrame {
+      padding: 20px;
+    }
+  
+    h1 {
+      font-size: 28px;
+    }
+  
+    h2 {
+      font-size: 22px;
+    }
+  
+    .inputGroup input,
+    .inputGroup select {
+      font-size: 14px;
+    }
+  
+    .registerButton,
+    .backToLoginButton {
+      padding: 12px;
+      font-size: 16px;
+    }
+  }
+  
