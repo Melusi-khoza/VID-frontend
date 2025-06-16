@@ -1,473 +1,398 @@
-// idUtils.js - Enhanced version with South African ID styling and coat of arms
-
 import axios from 'axios';
 import JsBarcode from 'jsbarcode';
-
 import defaultProfileImg from '../GenerateIDPage/muntu.jpeg';
-// Import the South African coat of arms
-import saCoatOfArms from '../GenerateIDPage/coatOfArm.jpeg'; // You'll need to add this image to your assets
+import saFlag from '../GenerateIDPage/sa_flag.jpg';
+import saCoatOfArms from '../GenerateIDPage/coatOfArm.jpeg';
 
 // Fetch the most recent application from the database
 export const fetchLatestApplication = async () => {
   try {
-    console.log("Fetching latest application...");
     const response = await axios.get('http://localhost:5265/api/Application');
-    if (response.data && response.data.length > 0) {
-      const sortedApplications = response.data.sort((a, b) => b.applicationId - a.applicationId);
-      console.log("Latest application fetched:", sortedApplications[0]);
-      return sortedApplications[0];
+    if (response.data?.length > 0) {
+      return response.data.sort((a, b) => b.applicationId - a.applicationId)[0];
     }
-    throw new Error("No applications found in the database");
+    throw new Error("No applications found");
   } catch (error) {
     console.error("Error fetching applications:", error);
     throw error;
   }
 };
 
-// Fetch profile picture for a specific application
+// Fetch application by email
+export const fetchApplicationByEmail = async (email) => {
+  try {
+    const response = await axios.get(`http://localhost:5265/api/Application/email/${email}`);
+    if (response.data) return response.data;
+    throw new Error("No application found");
+  } catch (error) {
+    console.error("Error fetching application:", error);
+    throw error;
+  }
+};
+
+// Fetch profile picture with priority for verified images
 export const fetchProfilePicture = async (applicationId) => {
   try {
-    console.log(`Fetching profile picture for application ID: ${applicationId}`);
+    const userEmail = localStorage.getItem('currentUserEmail');
+    const verifiedProfilePic = localStorage.getItem(`verifiedProfilePic_${userEmail}`);
     
-    const response = await fetch(`http://localhost:5265/api/Application/${applicationId}/profilepicture`);
+    if (verifiedProfilePic?.startsWith('data:image')) return verifiedProfilePic;
     
-    if (!response.ok) {
-      console.log(`Profile picture not found: HTTP ${response.status}`);
-      
-      // Return the default profile picture as base64
-      return await convertImageToBase64(defaultProfileImg);
-    }
+    const localProfilePic = localStorage.getItem('profilePictureBase64');
+    if (localProfilePic?.startsWith('data:image')) return localProfilePic;
+
+    const personId = localStorage.getItem('userId');
+    const response = await fetch(`http://localhost:5265/api/Person/${personId}/profilepicture`);
     
+    if (!response.ok) return await convertImageToBase64(defaultProfileImg);
+
     const blob = await response.blob();
-    console.log("Profile picture blob retrieved:", blob);
-    
     return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onload = () => {
-        console.log("Profile picture converted to base64");
-        resolve(reader.result);
-      };
-      reader.onerror = () => {
-        console.error("Error reading blob as data URL");
-        // Use default profile if we can't read the blob
-        convertImageToBase64(defaultProfileImg).then(resolve);
-      };
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => convertImageToBase64(defaultProfileImg).then(resolve);
       reader.readAsDataURL(blob);
     });
   } catch (error) {
     console.error("Error fetching profile picture:", error);
-    // Use default profile on any error
     return await convertImageToBase64(defaultProfileImg);
   }
 };
 
-// Helper function to convert image to base64
+// Convert image to base64
 const convertImageToBase64 = async (imgPath) => {
   return new Promise((resolve) => {
     const img = new Image();
-    img.crossOrigin = 'Anonymous';
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
+      [canvas.width, canvas.height] = [img.width, img.height];
+      canvas.getContext('2d').drawImage(img, 0, 0);
       resolve(canvas.toDataURL('image/png'));
     };
-    img.onerror = () => {
-      console.error("Failed to load default profile image");
-      resolve(null);
-    };
-    img.src = imgPath;
+    img.onerror = () => resolve(null);
+    img.src = typeof imgPath === 'string' ? imgPath : URL.createObjectURL(imgPath);
   });
 };
 
-// Function to load the SA coat of arms
-const loadCoatOfArms = async () => {
-  try {
-    return await convertImageToBase64(saCoatOfArms);
-  } catch (error) {
-    console.error("Failed to load coat of arms:", error);
-    return null;
-  }
+// Load images (flag/coat of arms)
+const loadImage = async (src) => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
 };
 
-// Generate the ID card using canvas and embed a barcode with South African styling
+// Helper function to draw rounded rectangles
+const drawRoundedRect = (ctx, x, y, width, height, radius) => {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+};
+
+// Generate authentic SA ID card with rounded corners
 export const generateID = async (setIdImage, setLoading, setPersonData) => {
   try {
     setLoading(true);
-    
-    // Fetch application data
-    let applicationData;
-    try {
-      applicationData = await fetchLatestApplication();
-      if (!applicationData) {
-        throw new Error("No application data available");
-      }
-      setPersonData(applicationData);
-      console.log("Application data loaded successfully:", applicationData);
-    } catch (error) {
-      console.error("Failed to load application data:", error);
+    const userEmail = localStorage.getItem('currentUserEmail');
+    const storageKey = `generatedID_${userEmail}`;
+    const verifiedProfilePic = localStorage.getItem(`verifiedProfilePic_${userEmail}`);
+    const existingIdImage = localStorage.getItem(storageKey);
+
+    if (existingIdImage && !verifiedProfilePic) {
+      setIdImage(existingIdImage);
       setLoading(false);
-      alert("Failed to load application data. Please try again.");
-      return null;
+      return existingIdImage;
     }
 
-    // Set up canvas - using ID card dimensions (credit card size ratio)
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = 850;
-    canvas.height = 540; // Adjusted for better proportion
+    // Fetch application data
+    const applicationData = await fetchApplicationByEmail(userEmail);
+    if (!applicationData) throw new Error("No application data");
+    setPersonData(applicationData);
 
-    // South African ID card color scheme
-    const saGreen = '#27ae60';  // Green for primary elements
-    const saGold = '#f39c12';   // Gold accent color
-    const saBlue = '#004A77';   // Blue from the flag
-
-    // Draw ID card background with gradient
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    gradient.addColorStop(0, '#ffffff');
-    gradient.addColorStop(1, '#f5f5f5');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Add subtle pattern background
-    drawPatternBackground(ctx, canvas.width, canvas.height);
-
-    // Draw card border
-    ctx.strokeStyle = saGreen;
-    ctx.lineWidth = 8;
-    ctx.strokeRect(5, 5, canvas.width - 10, canvas.height - 10);
+    // Create front side
+    const frontCanvas = document.createElement('canvas');
+    const frontCtx = frontCanvas.getContext('2d');
+    [frontCanvas.width, frontCanvas.height] = [640, 400];
     
-    // Inner border
-    ctx.strokeStyle = saGold;
-    ctx.lineWidth = 2;
-    ctx.strokeRect(15, 15, canvas.width - 30, canvas.height - 30);
+    // Create back side
+    const backCanvas = document.createElement('canvas');
+    const backCtx = backCanvas.getContext('2d');
+    [backCanvas.width, backCanvas.height] = [640, 400];
 
-    // Draw header background
-    ctx.fillStyle = saBlue;
-    ctx.fillRect(5, 5, canvas.width - 10, 90);
+    // SA Official Colors
+    const colors = {
+      blue: '#002395',
+      green: '#007749',
+      gold: '#FFB81C',
+      white: '#FFFFFF',
+      black: '#000000'
+    };
 
-    // Load and draw coat of arms
-    const coatOfArmsImage = await loadCoatOfArms();
-    if (coatOfArmsImage) {
-      const coatImg = new Image();
-      await new Promise(resolve => {
-        coatImg.onload = resolve;
-        coatImg.src = coatOfArmsImage;
-        // Set a timeout in case image never loads
-        setTimeout(resolve, 2000);
-      });
-      
-      // Draw coat of arms in header
-      const coatSize = 80;
-      ctx.drawImage(coatImg, 30, 10, coatSize, coatSize);
-    } else {
-      // Fallback if coat of arms can't be loaded - draw a placeholder
-      drawCoatOfArmsPlaceholder(ctx, 30, 10, 80, 80);
+    /* ===== FRONT SIDE ===== */
+    drawRoundedRect(frontCtx, 0, 0, frontCanvas.width, frontCanvas.height, 20);
+    frontCtx.fillStyle = colors.white;
+    frontCtx.fill();
+
+    // Header with gradient
+    drawRoundedRect(frontCtx, 0, 0, frontCanvas.width, 60, 20);
+    const headerGradient = frontCtx.createLinearGradient(0, 0, frontCanvas.width, 0);
+    headerGradient.addColorStop(0, colors.blue);
+    headerGradient.addColorStop(1, colors.green);
+    frontCtx.fillStyle = headerGradient;
+    frontCtx.fill();
+
+    // Gold stripe
+    frontCtx.fillStyle = colors.gold;
+    frontCtx.fillRect(0, 60, frontCanvas.width, 4);
+
+    // Coat of Arms
+    const coatOfArms = await loadImage(saCoatOfArms);
+    if (coatOfArms) {
+      frontCtx.drawImage(coatOfArms, frontCanvas.width - 90, 8, 70, 50);
     }
 
-    // Draw header text
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 32px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('REPUBLIC OF SOUTH AFRICA', canvas.width / 2, 40);
-    ctx.font = 'bold 24px Arial';
-    ctx.fillText('SMART ID CARD', canvas.width / 2, 70);
+    // Header text
+    frontCtx.fillStyle = colors.white;
+    frontCtx.font = 'bold 20px "Arial Narrow"';
+    frontCtx.textAlign = 'left';
+    frontCtx.fillText('REPUBLIC OF SOUTH AFRICA', 20, 35);
+    frontCtx.font = 'bold 16px "Arial Narrow"';
+    frontCtx.fillText('IDENTITY CARD', 20, 55);
 
-    // Draw South African flag colors as accent line
-    drawSAFlagAccent(ctx, 5, 95, canvas.width - 10, 8);
+    // Photo with rounded corners
+    const [photoX, photoY, photoW, photoH] = [20, 90, 150, 180];
+    drawRoundedRect(frontCtx, photoX, photoY, photoW, photoH, 10);
+    frontCtx.strokeStyle = colors.green;
+    frontCtx.lineWidth = 2;
+    frontCtx.stroke();
 
-    // Prepare photo area
-    const photoX = 50;
-    const photoY = 120;
-    const photoWidth = 200;
-    const photoHeight = 250;
+    // Profile picture
+    //const profilePicture = verifiedProfilePic || await fetchProfilePicture(applicationData.applicationId);
+    const profilePicture = verifiedProfilePic || await fetchProfilePicture(applicationData.applicationId);
+if (profilePicture) {
+  const img = await loadImage(profilePicture);
+  if (img) {
+    frontCtx.save();
+    drawRoundedRect(frontCtx, photoX, photoY, photoW, photoH, 10);
+    frontCtx.clip();
 
-    // Try to load profile picture with proper error handling
-    let profilePicture = null;
-    if (applicationData && applicationData.applicationId) {
-      try {
-        console.log(`Attempting to fetch profile picture for application ID: ${applicationData.applicationId}`);
-        profilePicture = await fetchProfilePicture(applicationData.applicationId);
-        console.log("Profile picture fetch result:", profilePicture ? "Success" : "Not found");
-      } catch (err) {
-        console.warn("Could not load profile picture, using placeholder", err);
-      }
-    }
+    // Calculate scale to cover the area (object-fit: cover)
+    const scale = Math.max(photoW / img.width, photoH / img.height);
+    const drawWidth = img.width * scale;
+    const drawHeight = img.height * scale;
+    const offsetX = photoX + (photoW - drawWidth) / 2;
+    const offsetY = photoY + (photoH - drawHeight) / 2;
 
-    // Draw photo frame before photo
-    ctx.fillStyle = '#f0f0f0';
-    ctx.fillRect(photoX - 5, photoY - 5, photoWidth + 10, photoHeight + 10);
-    
-    // Draw either the profile picture or a placeholder
-    if (profilePicture) {
-      try {
-        console.log("Loading profile picture into image object");
-        const img = new Image();
-        
-        // Create a proper promise to handle image loading
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-          img.src = profilePicture; // Set source after attaching event handlers
-          
-          // Set a timeout in case the image never loads
-          setTimeout(() => reject(new Error("Image load timeout")), 5000);
-        }).catch(err => {
-          console.warn("Image failed to load:", err);
-          throw new Error("Failed to load profile picture");
-        });
+    frontCtx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+    frontCtx.restore();
+  } else {
+    drawPhotoPlaceholder(frontCtx, photoX, photoY, photoW, photoH, 10);
+  }
+} else {
+  drawPhotoPlaceholder(frontCtx, photoX, photoY, photoW, photoH, 10);
+}
 
-        ctx.drawImage(img, photoX, photoY, photoWidth, photoHeight);
-        console.log("Profile picture drawn on canvas");
-      } catch (err) {
-        console.warn("Error drawing profile picture, using placeholder:", err);
-        drawPhotoPlaceholder(ctx, photoX, photoY, photoWidth, photoHeight);
-      }
-    } else {
-      console.log("No profile picture available, using placeholder");
-      drawPhotoPlaceholder(ctx, photoX, photoY, photoWidth, photoHeight);
-    }
-    
-    // Draw photo border
-    ctx.strokeStyle = saGreen;
-    ctx.lineWidth = 3;
-    ctx.strokeRect(photoX, photoY, photoWidth, photoHeight);
-
-    // Draw personal information section with styled header
-    const infoStartX = 280;
-    const infoStartY = 140;
-    const lineHeight = 40;
-
-    // Section header with green background
-    ctx.fillStyle = saGreen;
-    ctx.fillRect(infoStartX, infoStartY - 40, canvas.width - infoStartX - 50, 30);
-    
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 18px Arial';
-    ctx.textAlign = 'left';
-    ctx.fillText('PERSONAL INFORMATION', infoStartX + 10, infoStartY - 20);
-
-    // Draw personal information
-    ctx.fillStyle = '#000000';
-    ctx.font = '18px Arial';
-    
-    // Draw styled labels and values
-    const labels = [
-      'Surname & Name:',
-      'ID Number:',
-      'Date of Birth:',
-      'Gender:',
-      'Nationality:',
-      'Citizenship:'
+    // Personal information
+    const fields = [
+      { label: 'ID NUMBER:', value: applicationData.personId || 'N/A' },
+      { label: 'SURNAME:', value: applicationData.lastName || applicationData.fullName?.split(' ')[0] || 'N/A' },
+      { label: 'NAMES:', value: applicationData.firstName || applicationData.fullName?.split(' ').slice(1).join(' ') || 'N/A' },
+      { label: 'DOB:', value: formatSADate(applicationData.dob) },
+      { label: 'NATIONALITY:', value: applicationData.citizenship || 'SOUTH AFRICAN' }
     ];
+
+    const [infoX, infoY, lineH] = [190, 90, 25];
+    frontCtx.fillStyle = colors.green;
+    frontCtx.font = 'bold 12px Arial';
+    fields.forEach((field, i) => frontCtx.fillText(field.label, infoX, infoY + i * lineH));
     
-    const values = [
-      applicationData.fullName || 'N/A',
-      applicationData.personId || 'N/A',
-      formatDate(applicationData.dob),
-      applicationData.gender || 'N/A',
-      applicationData.nationality || 'N/A',
-      applicationData.citizenship || 'N/A'
+    frontCtx.fillStyle = colors.black;
+    frontCtx.font = '12px Arial';
+    fields.forEach((field, i) => frontCtx.fillText(field.value, infoX + 100, infoY + i * lineH));
+
+    // Signature
+    const signatureX = frontCanvas.width - 30;
+    const signatureY = frontCanvas.height - 100;
+    frontCtx.fillStyle = colors.black;
+    frontCtx.font = 'italic 16px "Brush Script MT", cursive';
+    frontCtx.textAlign = 'right';
+    frontCtx.fillText(generateSignature(applicationData.fullName), signatureX, signatureY);
+    frontCtx.font = 'italic 10px Arial';
+    frontCtx.fillText('Signature', signatureX, signatureY + 15);
+
+    /* ===== BACK SIDE ===== */
+    drawRoundedRect(backCtx, 0, 0, backCanvas.width, backCanvas.height, 20);
+    backCtx.fillStyle = colors.white;
+    backCtx.fill();
+
+    // Security background pattern
+    backCtx.strokeStyle = 'rgba(0, 119, 73, 0.05)';
+    backCtx.lineWidth = 1;
+    for (let i = 0; i < backCanvas.width; i += 25) {
+      backCtx.beginPath();
+      backCtx.moveTo(i, 0);
+      backCtx.lineTo(i, backCanvas.height);
+      backCtx.stroke();
+    }
+
+    // Header
+    drawRoundedRect(backCtx, 0, 0, backCanvas.width, 60, 20);
+    backCtx.fillStyle = colors.blue;
+    backCtx.fill();
+    backCtx.fillStyle = colors.gold;
+    backCtx.fillRect(0, 60, backCanvas.width, 4);
+
+    // Back side title
+    backCtx.fillStyle = colors.white;
+    backCtx.font = 'bold 20px "Arial Narrow"';
+    backCtx.textAlign = 'center';
+    backCtx.fillText('SOUTH AFRICAN IDENTITY CARD', backCanvas.width/2, 35);
+    backCtx.font = 'bold 16px "Arial Narrow"';
+    backCtx.fillText('BACK SIDE', backCanvas.width/2, 55);
+
+    // Barcode
+    const barcodeCanvas = document.createElement('canvas');
+    [barcodeCanvas.width, barcodeCanvas.height] = [300, 80];
+    
+    JsBarcode(barcodeCanvas, applicationData.personId || '0000000000000', {
+      format: "CODE128",
+      lineColor: colors.black,
+      width: 3,
+      height: 60,
+      displayValue: true,
+      font: "12px Arial",
+      textMargin: 3
+    });
+
+    backCtx.drawImage(barcodeCanvas, (backCanvas.width - 300)/2, 100);
+
+    // Additional information
+    const backInfo = [
+      'Issued by: Department of Home Affairs',
+      'Valid until: ' + new Date(new Date().setFullYear(new Date().getFullYear() + 5)).toLocaleDateString('en-ZA'),
+      'Emergency contact: 0800 123 456',
+      'For official use only'
     ];
+
+    backCtx.fillStyle = colors.black;
+    backCtx.font = '12px Arial';
+    backCtx.textAlign = 'center';
+    backInfo.forEach((text, i) => {
+      backCtx.fillText(text, backCanvas.width/2, 200 + i * 25);
+    });
+
+    // Watermark
+    backCtx.save();
+    backCtx.fillStyle = 'rgba(0, 119, 73, 0.08)';
+    backCtx.font = 'bold 72px Arial';
+    backCtx.rotate(-0.2);
+    backCtx.fillText('SA', 100, 250);
+    backCtx.restore();
+
+    // Combine both sides into one image
+    const combinedCanvas = document.createElement('canvas');
+    const combinedCtx = combinedCanvas.getContext('2d');
+    [combinedCanvas.width, combinedCanvas.height] = [640, 850]; // Stack vertically
     
-    // Draw labels and values
-    for (let i = 0; i < labels.length; i++) {
-      // Label in bold
-      ctx.font = 'bold 18px Arial';
-      ctx.fillText(labels[i], infoStartX, infoStartY + lineHeight * i);
-      
-      // Value in regular font
-      ctx.font = '18px Arial';
-      ctx.fillText(values[i], infoStartX + 150, infoStartY + lineHeight * i);
-    }
-
-    // Create and draw barcode
-    try {
-      const barcodeCanvas = document.createElement('canvas');
-      barcodeCanvas.width = 500;
-      barcodeCanvas.height = 80;
-
-      JsBarcode(barcodeCanvas, applicationData.personId || '0000000000000', {
-        format: "CODE128",
-        lineColor: "#000000",
-        width: 2,
-        height: 70,
-        displayValue: false
-      });
-
-      // Draw barcode with a label
-      ctx.drawImage(barcodeCanvas, 280, 390);
-      ctx.font = '14px Arial';
-      ctx.fillStyle = '#444';
-      //ctx.fillText("ID NUMBER: " + (applicationData.personId || '0000000000000'), 280, 480);
-    } catch (barcodeError) {
-      console.error("Failed to generate barcode:", barcodeError);
-      // Draw text as fallback
-      ctx.fillText("ID: " + (applicationData.personId || '0000000000000'), 280, 420);
-    }
-
-    // Generate and add signature from initials
-    const initials = generateInitialsFromName(applicationData.fullName || 'JS');
-    const signatureX = 125;
-    const signatureY = 485;
+    // Add white background
+    combinedCtx.fillStyle = colors.white;
+    combinedCtx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
     
-    // Draw signature using initials
-    drawSignature(ctx, initials, signatureX, signatureY);
+    // Draw front side (top)
+    combinedCtx.drawImage(frontCanvas, 0, 20);
     
-    // Add signature line below the signature
-    ctx.beginPath();
-    ctx.moveTo(50, 500);
-    ctx.lineTo(200, 500);
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 1;
-    ctx.stroke();
+    // Draw divider
+    combinedCtx.strokeStyle = colors.gold;
+    combinedCtx.lineWidth = 2;
+    combinedCtx.beginPath();
+    combinedCtx.moveTo(50, 430);
+    combinedCtx.lineTo(590, 430);
+    combinedCtx.stroke();
     
-    ctx.font = '14px Arial';
-    ctx.fillStyle = '#000';
-    ctx.textAlign = 'center';
-    ctx.fillText("SIGNATURE", 125, 515);
+    // Draw back side (bottom)
+    combinedCtx.drawImage(backCanvas, 0, 450);
 
-    // Convert canvas to image
-    const idImageUrl = canvas.toDataURL('image/png');
+    // Add "FRONT" and "BACK" labels
+    combinedCtx.fillStyle = colors.blue;
+    combinedCtx.font = 'bold 14px Arial';
+    combinedCtx.textAlign = 'left';
+    combinedCtx.fillText('FRONT', 30, 30);
+    combinedCtx.fillText('BACK', 30, 460);
+
+    const idImageUrl = combinedCanvas.toDataURL('image/png');
+    localStorage.setItem(storageKey, idImageUrl);
     setIdImage(idImageUrl);
     setLoading(false);
-    console.log("South African ID card generated successfully");
     return idImageUrl;
   } catch (error) {
     console.error("Error generating ID:", error);
     setLoading(false);
-    alert("Failed to generate ID. Please try again.");
-    return null;
+    throw error;
   }
 };
 
-// Draw the South African flag-inspired accent
-function drawSAFlagAccent(ctx, x, y, width, height) {
-  // South African flag colors
-  const colors = ['#002395', '#de3831', '#ffffff', '#007a4d', '#ffd700', '#000000'];
-  const segmentWidth = width / colors.length;
-  
-  for (let i = 0; i < colors.length; i++) {
-    ctx.fillStyle = colors[i];
-    ctx.fillRect(x + (i * segmentWidth), y, segmentWidth, height);
-  }
-}
-
-// Draw a placeholder for the coat of arms
-function drawCoatOfArmsPlaceholder(ctx, x, y, width, height) {
-  ctx.fillStyle = '#f0f0f0';
-  ctx.fillRect(x, y, width, height);
-  ctx.strokeStyle = '#666666';
-  ctx.strokeRect(x, y, width, height);
-  ctx.fillStyle = '#666666';
-  ctx.font = '12px Arial';
-  ctx.textAlign = 'center';
-  ctx.fillText('COAT OF ARMS', x + width/2, y + height/2);
-}
-
-// Draw a placeholder box when there's no profile picture
-function drawPhotoPlaceholder(ctx, x, y, width, height) {
-  ctx.fillStyle = '#e0e0e0';
-  ctx.fillRect(x, y, width, height);
-  ctx.strokeStyle = '#666666';
-  ctx.strokeRect(x, y, width, height);
-  ctx.fillStyle = '#666666';
-  ctx.font = '18px Arial';
-  ctx.textAlign = 'center';
-  ctx.fillText('PHOTO', x + width/2, y + height/2);
-}
-
-// Draw a subtle pattern background for the ID card
-function drawPatternBackground(ctx, width, height) {
-  ctx.save();
-  ctx.globalAlpha = 0.05;
-  
-  // Create repeating pattern
-  for (let i = 0; i < width; i += 20) {
-    for (let j = 0; j < height; j += 20) {
-      // Draw small decorative elements
-      ctx.beginPath();
-      ctx.arc(i, j, 1, 0, Math.PI * 2);
-      ctx.fillStyle = '#004A77';
-      ctx.fill();
-    }
-  }
-  
-  ctx.restore();
-}
-
-// Format date from ISO to readable
-function formatDate(dateString) {
+// SA date format (DD MMM YYYY)
+function formatSADate(dateString) {
   if (!dateString) return 'N/A';
   try {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-ZA', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  } catch (e) {
+    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    return `${date.getDate().toString().padStart(2, '0')} ${months[date.getMonth()]} ${date.getFullYear()}`;
+  } catch {
     return 'N/A';
   }
 }
 
-// Generate initials from name
-function generateInitialsFromName(fullName) {
-  if (!fullName) return 'JS'; // Default to JS if no name
+function generateSignature(fullName) {
+  if (!fullName) return 'J.S';
   
-  // Split the name and get initials
+  // Extract first letters of first two names
   const nameParts = fullName.split(' ');
-  let initials = '';
+  let signature = '';
   
-  // Get up to 2 initials
-  for (let i = 0; i < Math.min(2, nameParts.length); i++) {
-    if (nameParts[i].length > 0) {
-      initials += nameParts[i][0].toUpperCase();
-    }
+  if (nameParts.length >= 2) {
+    signature = `${nameParts[0][0]}.${nameParts[1][0]}.`; // Format: F.L.
+  } else if (nameParts.length === 1) {
+    signature = `${nameParts[0][0]}.`; // Single initial if only one name
   }
   
-  return initials.length > 0 ? initials : 'JS';
+  return signature.toUpperCase();
 }
 
-// Draw a handwritten-style signature using the person's initials
-function drawSignature(ctx, initials, x, y) {
-  // Save context state
-  ctx.save();
+// Photo placeholder with rounded corners
+function drawPhotoPlaceholder(ctx, x, y, w, h, r = 0) {
+  if (r > 0) {
+    drawRoundedRect(ctx, x, y, w, h, r);
+    ctx.fillStyle = '#f0f0f0';
+    ctx.fill();
+  } else {
+    ctx.fillStyle = '#f0f0f0';
+    ctx.fillRect(x, y, w, h);
+  }
   
-  // Set up signature style
-  ctx.font = 'italic bold 32px "Brush Script MT", cursive';
-  ctx.fillStyle = '#000066';
-  
-  // Add a slight rotation to make it look more like handwriting
-  ctx.translate(x, y);
-  ctx.rotate(-Math.PI / 36); // Rotate slightly counter-clockwise
-  
-  // Draw the signature
+  ctx.fillStyle = '#999';
+  ctx.font = '12px Arial';
   ctx.textAlign = 'center';
-  ctx.fillText(initials, 0, 0);
-  
-  // Add a slight underline swish
-  ctx.beginPath();
-  ctx.moveTo(-20, 5);
-  ctx.quadraticCurveTo(0, 15, initials.length * 15, 5);
-  ctx.strokeStyle = '#000066';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-  
-  // Restore context
-  ctx.restore();
+  ctx.fillText('PHOTO', x + w/2, y + h/2);
 }
 
-// Allow downloading the image
+// Download ID image
 export const downloadID = (idImage) => {
-  if (idImage) {
-    const link = document.createElement("a");
-    link.href = idImage;
-    link.download = "SA_ID_Card.png";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
+  if (!idImage) return;
+  const link = document.createElement("a");
+  link.href = idImage;
+  link.download = "SA_ID_Card_Front_and_Back.png";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 };

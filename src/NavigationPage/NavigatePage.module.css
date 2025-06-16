@@ -20,6 +20,16 @@
   box-shadow: 4px 0 10px rgba(0, 0, 0, 0.2);
 }
 
+.infoMessage {
+  color: #ffd700;
+  background: rgba(44, 62, 80, 0.8);
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 18px;
+  text-align: center;
+  font-size: 1rem;
+}
+
 /* Sidebar Title */
 .logoText {
   font-size: 1.8rem;

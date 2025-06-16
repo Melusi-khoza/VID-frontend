@@ -33,7 +33,7 @@ const Login = () =>{
         // Store the token in localStorage
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('userId', response.data.userId);
-
+        localStorage.setItem('currentUserEmail', email);
         // Redirect to dashboard or home page
         navigate('/my_register');
         // Example after successful login
@@ -82,6 +82,11 @@ const Login = () =>{
         <div>
           <Link to="/forgot-password" className={styles['forgot-password']}>
             Forgot Password?
+          </Link>
+        </div>
+        <div>
+          <Link to="/" className={styles['forgot-gotoregister']}>
+            Home?
           </Link>
         </div>
       </div>     

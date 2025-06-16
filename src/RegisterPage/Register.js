@@ -5,7 +5,7 @@ import axios from 'axios';
 
 function Register() {
   const navigate = useNavigate();
-  
+
   const [formData, setFormData] = useState({
     IdentityId: '',
     Firstname: '',
@@ -15,22 +15,23 @@ function Register() {
     UserPassword: '',
     Gender: ''
   });
-  
+
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [isIdValid, setIsIdValid] = useState(false);
+  const [userExists, setUserExists] = useState(false);
 
   const validatePassword = (password) => {
     const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     return regex.test(password);
   };
 
-  const handleChange = (e) => {
+  const handleChange = async (e) => {
     const { name, value } = e.target;
-    
-    // Special handling for password to validate it
+
     if (name === 'UserPassword') {
       if (!validatePassword(value)) {
         setPasswordError([
@@ -44,43 +45,103 @@ function Register() {
         setPasswordError('');
       }
     }
-    
-    // Update form data
+
     setFormData({
       ...formData,
       [name]: value
     });
+
+    if (name === 'IdentityId' && value.length >= 6) {
+      try {
+        // Check if user already exists with this ID
+        const existsRes = await axios.get(`http://localhost:5265/api/Person/exists/${value}`);
+        if (existsRes.data.exists) {
+          setMessage('An account with this ID number already exists.');
+          setIsIdValid(false);
+          setUserExists(true);
+          return; // Stop further processing
+        } else {
+          setUserExists(false);
+        }
+        
+        // If user doesn't exist, check if their info is in the system
+        const res = await axios.get(`http://localhost:5265/api/Person/child-info/${value}`);
+        if (res.data) {
+          setFormData((prev) => ({
+            ...prev,
+            Gender: res.data.gender === 'M' ? 'Male' : res.data.gender === 'F' ? 'Female' : 'Other',
+            Firstname: res.data.firstname,
+            Surname: res.data.surname,
+            DateOfBirth: res.data.dateOfBirth
+          }));
+          setMessage('');
+          setIsIdValid(true);
+        }
+      } catch (err) {
+        // If error is from exists check, the message is already set
+        if (!userExists) {
+          setMessage('ID not found in system.');
+          setFormData((prev) => ({
+            ...prev,
+            Firstname: '',
+            Surname: '',
+            Gender: '',
+            DateOfBirth: ''
+          }));
+          setIsIdValid(false);
+        }
+      }
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validate passwords match
-    if (formData.UserPassword !== confirmPassword) {
-      setMessage('Passwords do not match.');
+
+    if (!isIdValid || userExists) {
+      const msg = userExists 
+        ? 'An account with this ID number already exists.' 
+        : 'You must enter a valid ID found in the system.';
+      setMessage(msg);
+      alert(msg);
       return;
     }
 
-   
-    
-    // Convert PersonId to number for backend
-    const submissionData = {
-      ...formData,
-      //PersonId: parseInt(formData.PersonId, 10) || 0 // Convert to number or use 0 if invalid
-    };
-    
+    if (formData.UserPassword !== confirmPassword) {
+      const msg = 'Passwords do not match.';
+      setMessage(msg);
+      alert(msg);
+      return;
+    }
+
+    const submissionData = { ...formData };
+
     setIsLoading(true);
-    setMessage(' ');
+    setMessage('');
 
     try {
       const response = await axios.post('http://localhost:5265/api/Person', submissionData);
       const successMessage = 'Registration successful!';
       setMessage(successMessage);
-      alert(successMessage); // 
+      alert(successMessage);
+
+      // Save user data to localStorage for use in the application form
+      const userApplicationData = {
+        PersonId: formData.IdentityId,
+        FullName: `${formData.Firstname} ${formData.Surname}`,
+        Gender: formData.Gender,
+        DOB: formData.DateOfBirth,
+        Email: formData.Email,
+        // Add any other fields you want to pre-populate
+      };
       
-      // Reset form 
+      // Store the user data with the email as key for later retrieval
+      localStorage.setItem(`applicationData_${formData.Email}`, JSON.stringify(userApplicationData));
+      
+      // Also store the currently logged in user's email
+      localStorage.setItem('currentUserEmail', formData.Email);
+
       setFormData({
-        IdentityId:'',
+        IdentityId: '',
         Firstname: '',
         Surname: '',
         DateOfBirth: '',
@@ -89,16 +150,13 @@ function Register() {
         Gender: ''
       });
       setConfirmPassword('');
-      
-      // Navigate programmatically after successful registration
+      setIsIdValid(false);
       navigate('/login');
-      
     } catch (error) {
       console.error('Registration error:', error);
 
       let errorMessage = 'Registration failed: ';
       if (error.response) {
-        console.error('Response data:', error.response.data);
         errorMessage += (error.response.data.message || error.response.data || error.response.statusText);
       } else if (error.request) {
         errorMessage += 'No response from server. Check your connection.';
@@ -106,11 +164,16 @@ function Register() {
         errorMessage += error.message;
       }
 
-      setMessage('Registration failed: ' + (error.response?.data || error.message));
-      alert(message); // Show error message
+      setMessage(errorMessage);
+      alert(errorMessage);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const getMessageStyle = () => {
+    if (!message) return '';
+    return message.toLowerCase().includes('success') ? styles.successMessage : styles.errorMessage;
   };
 
   return (
@@ -120,10 +183,9 @@ function Register() {
         <h2>Sign Up</h2>
         <p>Create a new account to get started.</p>
 
-        {message && <div className={styles.message}>{message}</div>}
+        {message && <div className={getMessageStyle()}>{message}</div>}
 
         <form onSubmit={handleSubmit}>
-          {/* Step 1 */}
           {step === 1 && (
             <>
               <div className={styles.inputGroup}>
@@ -139,45 +201,51 @@ function Register() {
               </div>
 
               <div className={styles.inputGroup}>
-                <label htmlFor="Firstname">First Name</label>
-                <input
-                  type="text"
-                  id="Firstname"
-                  name="Firstname"
-                  value={formData.Firstname}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
+              <label htmlFor="Firstname">First Name</label>
+              <input
+                type="text"
+                id="Firstname"
+                name="Firstname"
+                value={formData.Firstname}
+                onChange={handleChange}
+                required
+                disabled={isIdValid}
+                readOnly
+              />
+            </div>
 
-              <div className={styles.inputGroup}>
-                <label htmlFor="Surname">Surname</label>
-                <input
-                  type="text"
-                  id="Surname"
-                  name="Surname"
-                  value={formData.Surname}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
+            <div className={styles.inputGroup}>
+            <label htmlFor="Surname">Surname</label>
+            <input
+              type="text"
+              id="Surname"
+              name="Surname"
+              value={formData.Surname}
+              onChange={handleChange}
+              required
+              disabled={isIdValid}
+              readOnly
+            />
+          </div>
             </>
           )}
 
-          {/* Step 2 */}
           {step === 2 && (
             <>
               <div className={styles.inputGroup}>
-                <label htmlFor="DateOfBirth">Date of Birth</label>
-                <input
-                  type="date"
-                  id="DateOfBirth"
-                  name="DateOfBirth"
-                  value={formData.DateOfBirth}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
+              <label htmlFor="DateOfBirth">Date of Birth</label>
+              <input
+                type="date"
+                id="DateOfBirth"
+                name="DateOfBirth"
+                value={formData.DateOfBirth}
+                onChange={handleChange}
+                required
+                disabled={isIdValid}
+                readOnly
+              />
+            </div>
+
 
               <div className={styles.inputGroup}>
                 <label htmlFor="Email">Email</label>
@@ -193,7 +261,6 @@ function Register() {
             </>
           )}
 
-          {/* Step 3 */}
           {step === 3 && (
             <>
               <div className={styles.inputGroup}>
@@ -230,92 +297,72 @@ function Register() {
                   <p className={styles.errorText}>Passwords do not match.</p>
                 )}
               </div>
-
-              <div className={styles.inputGroup}>
-                <label htmlFor="Gender">Gender</label>
-                <select
-                  id="Gender"
-                  name="Gender"
-                  value={formData.Gender}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="">Select Gender</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
             </>
           )}
 
-          {/* Step Navigation Buttons */}
-          <div
-  style={{
-    display: 'flex',
-    gap: '10px', // space between the buttons
-    justifyContent: 'center', // center buttons
-    marginTop: '20px',
-  }}
->
-  {step > 1 && (
-    <button
-      type="button"
-      onClick={() => setStep(step - 1)}
-      style={{
-        backgroundColor: '#1e90ff', // blue like in your screenshot
-        color: 'white',
-        fontWeight: 'bold',
-        padding: '12px 40px',
-        border: 'none',
-        borderRadius: '999px', // fully rounded
-        cursor: 'pointer',
-        fontSize: '16px',
-        
-      }}
-    >
-      Back
-    </button>
-  )}
-  {step < 3 && (
-    <button
-      type="button"
-      onClick={() => setStep(step + 1)}
-      style={{
-        backgroundColor: '#1e90ff',
-        color: 'white',
-        fontWeight: 'bold',
-        padding: '12px 30px',
-        border: 'none',
-        borderRadius: '999px',
-        cursor: 'pointer',
-        fontSize: '16px',
-        paddingBottom: '10px'
-      }}
-    >
-      Next
-    </button>
-  )}
-</div>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '20px' }}>
+            {step > 1 && (
+              <button
+                type="button"
+                onClick={() => setStep(step - 1)}
+                style={{
+                  backgroundColor: '#1e90ff',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  padding: '12px 40px',
+                  border: 'none',
+                  borderRadius: '999px',
+                  cursor: 'pointer',
+                  fontSize: '16px'
+                }}
+              >
+                Back
+              </button>
+            )}
+            {step < 3 && (
+              <button
+                type="button"
+                onClick={() => {
+                  // Don't allow proceeding if user already exists
+                  if (userExists) {
+                    alert('An account with this ID number already exists.');
+                    return;
+                  }
+                  setStep(step + 1);
+                  setMessage('');
+                }}
+                style={{
+                  backgroundColor: '#1e90ff',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  padding: '12px 30px',
+                  border: 'none',
+                  borderRadius: '999px',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  paddingBottom: '10px'
+                }}
+              >
+                Next
+              </button>
+            )}
+          </div>
 
-          {/* Submit Button */}
           {step === 3 && (
             <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <button className={styles.registerButton} type="submit" disabled={isLoading}>
-              {isLoading ? 'Registering...' : 'Register'}
-            </button>
-          </div>
-          
+              <button
+                className={styles.registerButton}
+                type="submit"
+                disabled={isLoading || !isIdValid || userExists}
+              >
+                {isLoading ? 'Registering...' : 'Register'}
+              </button>
+            </div>
           )}
 
-          {/* Back to Login Button */}
           <div className={styles.backButtons}>
-            {/* <Link to="/login">
-                Back to Login
-              
-            </Link> */}
             <Link to="/login" className={styles['back-login']}>
-                  Back to login
+              Back to login
             </Link>
           </div>
         </form>

@@ -1,22 +1,204 @@
-.previewContainer {
-    display: flex;
-    justify-content: center;
-    margin-top: 20px;
-    padding: 10px;
-  }
-  
-  .idImage {
-    width: 100%;
-    max-width: 500px; /* Adjust the max-width of the image */
-    height: auto;
-    border-radius: 8px; /* Slight rounding for a polished look */
-    border: 1px solid #ddd; /* Optional: Add a light border around the image */
-  }
-  
-  .idImageContainer {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 10px;
-  }
-  
+/* Container that holds everything on the page */
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh; /* Full viewport height */
+  padding: 20px;
+  background-color: #f4f4f4; /* Light background color */
+}
+
+/* Title for the page */
+.title {
+  font-size: 28px;
+  color: #333;
+  margin-bottom: 20px;
+  font-weight: bold;
+}
+
+/* Loader style when the ID is being generated */
+.loader {
+  font-size: 20px;
+  color: #ff6347; /* Tomato color for emphasis */
+  margin-top: 20px;
+}
+
+/* Button for downloading the generated ID */
+.downloadButton,
+.generateButton {
+  padding: 12px 24px;
+  font-size: 18px;
+  cursor: pointer;
+  border-radius: 8px; /* Rounded corners for buttons */
+  border: none;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  margin-top: 20px;
+}
+
+/* Disabled state for both buttons */
+.downloadButton:disabled,
+.generateButton:disabled {
+  background-color: #ccc; /* Gray background for disabled */
+  cursor: not-allowed;
+  transform: scale(1); /* No scaling when disabled */
+}
+
+/* Hover effects for the buttons */
+.generateButton:hover,
+.downloadButton:hover:not(:disabled) {
+  background-color: #45a049; /* Darker green on hover */
+  transform: scale(1.05); /* Slightly enlarge button */
+}
+
+/* Specific styles for the "Generate ID" button */
+.generateButton {
+  background-color: #4caf50; /* Green background for the generate button */
+  color: white;
+}
+
+/* Specific styles for the "Download ID" button */
+.downloadButton {
+  background-color: #007bff; /* Blue background for the download button */
+  color: white;
+}
+
+/* Container for the generated ID preview image */
+.idPreviewContainer {
+  display: flex;
+  justify-content: center;
+  margin-top: 30px;
+}
+
+.idPreviewImage {
+  width: 300px; /* Set width of the preview image */
+  height: auto;
+  border-radius: 8px; /* Rounded corners for image */
+  border: 1px solid #ddd; /* Optional: Light border around the image */
+}
+
+.idPreviewMessage {
+  font-size: 16px;
+  color: #333;
+  margin-top: 10px;
+}
+
+/* New Styles to Match South African ID Card Design */
+/* Main ID Card Container */
+.id-card {
+  position: relative;
+  width: 300px;
+  height: 200px;
+  background: linear-gradient(to bottom, #004a77, #ffffff); /* Gradient from dark blue to white */
+  border: 2px solid #000;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+/* Header Section */
+.id-card-header {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  background: #004a77; /* Dark blue header */
+  color: #fff;
+  font-weight: bold;
+}
+
+/* Flag Icon */
+.id-card-flag {
+  width: 40px;
+  height: 40px;
+  margin-right: 10px;
+}
+
+/* Title Text */
+.id-card-title {
+  font-size: 18px;
+  text-transform: uppercase;
+}
+
+/* Photo Placeholder */
+.id-card-photo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: 2px solid #000;
+  overflow: hidden;
+}
+
+.id-card-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Personal Information Section */
+.id-card-info {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  color: #000;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.id-card-info label {
+  font-weight: bold;
+}
+
+.id-card-info span {
+  display: block;
+}
+
+/* Footer Section */
+.id-card-footer {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  color: #000;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Barcode Section */
+.id-card-barcode {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 100px;
+  height: 50px;
+  border: 1px solid #000;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.id-card-barcode canvas {
+  max-width: 90%;
+  max-height: 90%;
+}
+
+/* Signature Placeholder */
+.id-card-signature {
+  position: absolute;
+  bottom: 10px;
+  right: 120px;
+  width: 100px;
+  height: 50px;
+  border: 1px solid #000;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-style: italic;
+  font-size: 16px;
+  color: #000;
+}

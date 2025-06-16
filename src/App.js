@@ -12,6 +12,11 @@ import ProcessingPage from './ApplicationPage/ProcessingPage';
 import GenerateID from './GenerateIDPage/GenerateID';
 import ReportPage from './NavigationPage/ReportPage';
 import { generateID } from './GenerateIDPage/idUtils';
+// import AdminReport from './AdminReportPage/AdminReport';
+// import AdminDashboard from './AdminDashboard';
+import AdminDashboard from './LandingPage/AdminDashboard';
+import TrackingApplications from './LandingPage/TrackingApplications';
+import CameraPage from './ApplicationPage/CameraPage';
 
 function App() {
   return (
@@ -29,6 +34,10 @@ function App() {
         <Route path="/generate_id" element={<GenerateID />} />
         <Route path="/processing" element={<ProcessingPage />} />
         <Route path="/reports" element={<ReportPage />} />
+        <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/tracking-applications" element={<TrackingApplications />} />
+        <Route path="/camera" element={<CameraPage />} />
+        {/* <Route path="/admin-report" element={<AdminReport />} /> */}
        </Routes>
   </Router>
   );

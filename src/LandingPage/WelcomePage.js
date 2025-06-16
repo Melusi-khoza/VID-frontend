@@ -1,25 +1,50 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import LogoLanding from "./LogoLanding.png";
 import styles from "./WelcomePage.module.css";
-
+import AdminLoginModal from "../LandingPage/AdminLoginModal";
 
 function WelcomePage() {
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
+  const handleAdminLogin = (username, password) => {
+    if (username === "Mazibuko" && password === "Moment2@") {
+      window.location.href = "/admin-dashboard"; // Redirect to admin dashboard
+    }
+    else{
+      alert("INVALID CREDENTIALS!!");
+      window.location.href = "/";
+    }
+  };
+
   return (
     <div className={styles.container}>
-      {/* Header */}
+      {/* Header with added Admin button */}
       <header className={styles.header}>
         <div className={styles.logoWrap}>
-          
-      
           <span className={styles.brand}><strong>Virtual</strong> ID</span>
         </div>
         <div className={styles.navButtons}>
+          <button 
+            className={styles.navBtn}
+            onClick={() => setShowLoginModal(true)}
+          >
+            Analytics
+          </button>
           <Link to="/login"><button className={styles.navBtn}>Sign in</button></Link>
           <Link to="/register"><button className={styles.navBtnPrimary}>Register</button></Link>
         </div>
       </header>
 
+      {/* Admin Login Modal */}
+      {showLoginModal && (
+        <AdminLoginModal 
+          onClose={() => setShowLoginModal(false)}
+          onLogin={handleAdminLogin}
+        />
+      )}
+
+      {/* Rest of your existing content remains unchanged */}
       {/* Hero */}
       <section className={styles.hero}>
         <h1 className={styles.title}>Modern Digital ID Management</h1>

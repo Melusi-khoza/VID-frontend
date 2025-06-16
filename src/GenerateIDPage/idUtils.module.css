@@ -1,85 +1,236 @@
-/* Container that holds everything on the page */
+/* Main container */
 .container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh; /* Full viewport height */
-    padding: 20px;
-    background-color: #f4f4f4; /* Light background color */
-  }
-  
-  /* Title for the page */
-  .title {
-    font-size: 28px;
-    color: #333;
-    margin-bottom: 20px;
-    font-weight: bold;
-  }
-  
-  /* Loader style when the ID is being generated */
-  .loader {
-    font-size: 20px;
-    color: #ff6347; /* Tomato color for emphasis */
-    margin-top: 20px;
-  }
-  
-  /* Button for downloading the generated ID */
-  .downloadButton,
-  .generateButton {
-    padding: 12px 24px;
-    font-size: 18px;
-    cursor: pointer;
-    border-radius: 8px; /* Rounded corners for buttons */
-    border: none;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    margin-top: 20px;
-  }
-  
-  /* Disabled state for both buttons */
-  .downloadButton:disabled,
-  .generateButton:disabled {
-    background-color: #ccc; /* Gray background for disabled */
-    cursor: not-allowed;
-    transform: scale(1); /* No scaling when disabled */
-  }
-  
-  /* Hover effects for the buttons */
-  .generateButton:hover,
-  .downloadButton:hover:not(:disabled) {
-    background-color: #45a049; /* Darker green on hover */
-    transform: scale(1.05); /* Slightly enlarge button */
-  }
-  
-  /* Specific styles for the "Generate ID" button */
-  .generateButton {
-    background-color: #4caf50; /* Green background for the generate button */
-    color: white;
-  }
-  
-  /* Specific styles for the "Download ID" button */
-  .downloadButton {
-    background-color: #007bff; /* Blue background for the download button */
-    color: white;
-  }
-  
-  /* Container for the generated ID preview image */
-  .idPreviewContainer {
-    display: flex;
-    justify-content: center;
-    margin-top: 30px;
-  }
-  
-  .idPreviewImage {
-    width: 200px; /* Set width of the preview image */
-    height: auto;
-    border-radius: 8px; /* Rounded corners for image */
-    border: 1px solid #ddd; /* Optional: Light border around the image */
-  }
-  
-  .idPreviewMessage {
-    font-size: 16px;
-    color: #333;
-    margin-top: 10px;
-  }
-  
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  background-color: #f0f2f5;
+  font-family: 'Arial', sans-serif;
+}
+
+/* Title styling */
+.title {
+  font-size: 28px;
+  color: #002395; /* SA blue */
+  margin-bottom: 30px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Loader styling */
+.loader {
+  font-size: 20px;
+  color: #007749; /* SA green */
+  margin-top: 20px;
+}
+
+/* Button styling */
+.button {
+  padding: 12px 30px;
+  font-size: 18px;
+  cursor: pointer;
+  border-radius: 4px;
+  border: none;
+  transition: all 0.3s ease;
+  margin-top: 20px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: bold;
+}
+
+.generateButton {
+  background-color: #007749; /* SA green */
+  color: white;
+}
+
+.downloadButton {
+  background-color: #002395; /* SA blue */
+  color: white;
+  margin-left: 15px;
+}
+
+.button:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* ID Card Preview Container */
+.idPreviewContainer {
+  margin: 30px 0;
+  perspective: 1000px;
+}
+
+/* South African ID Card Styling */
+.sa-id-card {
+  width: 850px;
+  height: 540px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+  transform-style: preserve-3d;
+  transition: transform 0.5s;
+}
+
+/* ID Card Header */
+.sa-id-header {
+  height: 80px;
+  background: linear-gradient(to right, #002395, #007749);
+  display: flex;
+  align-items: center;
+  padding: 0 30px;
+  position: relative;
+  overflow: hidden;
+}
+
+.sa-id-header::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: #FFB81C; /* SA gold */
+}
+
+/* Coat of Arms */
+.sa-coat-of-arms {
+  height: 60px;
+  margin-right: 20px;
+}
+
+/* Header Text */
+.sa-id-header-text {
+  color: white;
+}
+
+.sa-id-header-text h1 {
+  font-size: 24px;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.sa-id-header-text h2 {
+  font-size: 18px;
+  margin: 5px 0 0;
+  font-weight: normal;
+}
+
+/* ID Card Body */
+.sa-id-body {
+  display: flex;
+  padding: 30px;
+  position: relative;
+}
+
+/* Photo Section */
+.sa-id-photo-section {
+  width: 220px;
+  margin-right: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sa-id-photo-container {
+  width: 200px;
+  height: 250px;
+  border: 2px solid #007749;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.sa-id-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sa-id-photo-placeholder {
+  color: #666;
+  text-align: center;
+  padding: 20px;
+}
+
+/* Info Section */
+.sa-id-info-section {
+  flex: 1;
+}
+
+.sa-id-info-row {
+  display: flex;
+  margin-bottom: 15px;
+  font-size: 16px;
+}
+
+.sa-id-info-label {
+  width: 200px;
+  font-weight: bold;
+  color: #007749;
+}
+
+.sa-id-info-value {
+  flex: 1;
+  color: #333;
+}
+
+/* Barcode Section */
+.sa-id-barcode-section {
+  position: absolute;
+  bottom: 30px;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sa-id-barcode {
+  height: 60px;
+  margin-bottom: 5px;
+}
+
+.sa-id-number {
+  font-family: 'OCR A', monospace;
+  font-size: 18px;
+  letter-spacing: 2px;
+}
+
+/* Security Features */
+.sa-id-security {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+  opacity: 0.1;
+  background-image: repeating-linear-gradient(
+    45deg,
+    #007749,
+    #007749 10px,
+    #002395 10px,
+    #002395 20px
+  );
+}
+
+/* Preview Message */
+.idPreviewMessage {
+  margin-top: 20px;
+  font-size: 16px;
+  color: #666;
+  text-align: center;
+}

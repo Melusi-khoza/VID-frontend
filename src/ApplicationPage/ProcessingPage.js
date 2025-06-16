@@ -8,11 +8,19 @@ const ProcessingPage = () => {
   const [emailSent, setEmailSent] = useState(false);
   const [exitMessageShown, setExitMessageShown] = useState(false);
   const navigate = useNavigate();
+  const [message, setMessage] = useState('');
   
   // Get applicant data from localStorage or state management
   const applicantData = JSON.parse(localStorage.getItem("applicantData")) || {};
 
   useEffect(() => {
+    const applicantData = JSON.parse(localStorage.getItem("applicantData"));
+    if (!applicantData || !applicantData.Email) {
+      console.error("Missing applicant data or email");
+      // Optionally redirect back or show error
+
+      navigate('/register'); // Redirect to registration page if no data
+    }
     // Check if there's an existing processing status in localStorage
     const existingStatus = JSON.parse(localStorage.getItem("processingStatus")) || {};
     
@@ -45,19 +53,18 @@ const ProcessingPage = () => {
       setTimeLeft((prevTime) => {
         if (prevTime <= 1) {
           clearInterval(timer);
-          // Send email notification when timer reaches zero
-          sendEmailNotification();
-          // Mark processing as complete in localStorage
-          localStorage.setItem("processingStatus", JSON.stringify({ 
-            inProgress: false,
-            completed: true,
-            completedAt: new Date().toISOString()
-          }));
-          // Navigate to generate ID page after email is sent
-          setTimeout(() => {
-            navigate("/generate_id");
-          }, 2000); // Give a short delay after email before redirect
-          return 0;
+          sendEmailNotification().finally(() => {
+            // Mark processing as complete
+            localStorage.setItem("processingStatus", JSON.stringify({
+              inProgress: false,
+              completed: true,
+              completedAt: new Date().toISOString()
+            }));
+
+            setTimeout(() => {
+              navigate("/generate_id");
+            }, 2000); // delay after email
+          });
         }
         return prevTime - 1;
       });
@@ -70,21 +77,43 @@ const ProcessingPage = () => {
   // Function to send email notification
   const sendEmailNotification = async () => {
     try {
-      // Only attempt to send if we have an email
-      if (applicantData.Email) {
-        await axios.post("http://localhost:5265/api/Notification/SendEmail", {
-          toEmail: applicantData.Email,
-          subject: "Your ID is Ready",
-          body: `Dear ${applicantData.FullName || "Applicant"},\n\nYour ID has been processed and is now ready. Please log in to the system to generate and download your virtual ID.\n\nRegards,\nHome Affairs Department`
-        });
-        
-        setEmailSent(true);
-        console.log("Email notification sent successfully");
-      } else {
-        console.warn("No email address available to send notification");
+      // Check if we have email data
+      if (!applicantData || !applicantData.Email) {
+        console.warn("No valid applicant data or email found.");
+        setEmailSent(false);
+        return;
       }
+
+      const response = await await axios.post(
+      'http://localhost:5265/api/Notification/SendEmail',
+      {
+        toEmail: applicantData.Email,
+        subject: "Your ID is Ready",
+        body: `Dear ${applicantData.FullName || "Applicant"},\n\n your id is ready for generation. You can now proceed to generate your ID \n\nThank you for using our service!`,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+      console.log("Email response:", response.data);
+
+      if (response.status === 200) {
+        setEmailSent(true);
+        console.log("✅ Email notification sent successfully.");
+      } else {
+        setEmailSent(false);
+        console.error("❌ Failed to send email: Unexpected status code", response.status);
+      }
+
     } catch (error) {
-      console.error("Failed to send email notification:", error);
+      setEmailSent(false);
+      console.error("🚫 Error sending email:", error.message || error);
+      
+      // Optional: show alert to user or store error state
+      setMessage("Failed to send email notification. Please check your connection.");
     }
   };
 
