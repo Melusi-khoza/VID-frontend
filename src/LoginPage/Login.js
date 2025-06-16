@@ -22,7 +22,7 @@ const Login = () =>{
     setLoading(true);
   
     try{
-        const response = await axios.post('http://localhost:5265/api/auth/login',{
+        const response = await axios.post('https://vid-backend-yyha.onrender.com/api/auth/login',{
           email,
           password
         });
