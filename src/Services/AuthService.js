@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5265/api/';
+const API_URL = 'https://vid-backend-yyha.onrender.com/api/';
 
 
 //const API_URL2 = process.env.REACT_APP_API_URL || 'http://localhost:5265/api/';
