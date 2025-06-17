@@ -54,7 +54,7 @@ function Register() {
     if (name === 'IdentityId' && value.length >= 6) {
       try {
         // Check if user already exists with this ID
-        const existsRes = await axios.get(`http://localhost:5265/api/Person/exists/${value}`);
+        const existsRes = await axios.get(`https://vid-backend-yyha.onrender.com/api/Person/exists/${value}`);
         if (existsRes.data.exists) {
           setMessage('An account with this ID number already exists.');
           setIsIdValid(false);
@@ -65,7 +65,7 @@ function Register() {
         }
         
         // If user doesn't exist, check if their info is in the system
-        const res = await axios.get(`http://localhost:5265/api/Person/child-info/${value}`);
+        const res = await axios.get(`https://vid-backend-yyha.onrender.com/api/Person/child-info/${value}`);
         if (res.data) {
           setFormData((prev) => ({
             ...prev,
@@ -119,7 +119,7 @@ function Register() {
     setMessage('');
 
     try {
-      const response = await axios.post('http://localhost:5265/api/Person', submissionData);
+      const response = await axios.post('https://vid-backend-yyha.onrender.com/api/Person', submissionData);
       const successMessage = 'Registration successful!';
       setMessage(successMessage);
       alert(successMessage);
