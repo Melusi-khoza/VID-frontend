@@ -22,7 +22,7 @@ const Login = () =>{
     setLoading(true);
   
     try{
-        const response = await axios.post('https://vid-backend-yyha.onrender.com/api/auth/login',{
+        const response = await axios.post(' https://18e1-168-172-120-67.ngrok-free.app/api/auth/login',{
           email,
           password
         });
